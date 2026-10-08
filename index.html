@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mahjong Dubai</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Philosopher:wght@700&family=Figtree:wght@300;400;500;600;700&display=swap">
+<style>
+body{margin:0}[hidden]{display:none!important}
+/* Layout: maroon score-card header, tab bar, one working panel at a time; tiles as the recurring motif */
+:root{
+  --bg:#f8f4f2; --card:#ffffff; --fg:#2b1414; --muted:#7a6464; --line:#eaddd9;
+  --maroon:#511717; --on-maroon:#fff8ee; --gold:#E9AE40; --jade:#83323F; --jade-soft:#fbefd8; --loss:#8a7070; --win:#2c6e4f;
+  --display:"Philosopher",Georgia,serif; --body:"Figtree",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#1a0f0f; --card:#261616; --fg:#f5eae6; --muted:#b59e9c; --line:#402828;
+  --maroon:#511717; --on-maroon:#fff8ee; --gold:#E9AE40; --jade:#E9AE40; --jade-soft:#3a2714; --loss:#a89090; --win:#7fc8a3; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1a0f0f; --card:#261616; --fg:#f5eae6; --muted:#b59e9c; --line:#402828;
+  --maroon:#511717; --on-maroon:#fff8ee; --gold:#E9AE40; --jade:#E9AE40; --jade-soft:#3a2714; --loss:#a89090; --win:#7fc8a3; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.45}
+.wrap{max-width:860px;margin:0 auto;padding-inline:16px;padding-block:20px 56px;display:flex;flex-direction:column;gap:18px}
+header{background:var(--maroon);color:var(--on-maroon);border-radius:6px;padding:20px 22px;outline:1px solid var(--gold);outline-offset:-6px;display:flex;flex-wrap:wrap;gap:8px 20px;align-items:baseline;justify-content:space-between}
+h1{font-family:var(--display);font-weight:400;font-size:1.9rem;margin:0;letter-spacing:.01em}
+header p{margin:0;font-size:.9rem;opacity:.85}
+header p.tag{opacity:1;font-size:.72rem}
+.note{font-size:.85rem;color:var(--muted);margin:0}
+nav{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+nav button{font:600 .95rem var(--body);color:var(--muted);background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;cursor:pointer;white-space:nowrap}
+nav button[aria-selected="true"]{color:var(--maroon);border-bottom-color:var(--maroon)}
+:root[data-theme="dark"] nav button[aria-selected="true"]{color:var(--gold);border-bottom-color:var(--gold)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) nav button[aria-selected="true"]{color:var(--gold);border-bottom-color:var(--gold)}}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+section{display:flex;flex-direction:column;gap:16px}
+h2{font-family:var(--display);font-weight:400;font-size:1.35rem;margin:0}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;background:var(--card);padding:3px}
+.seg button{font:600 .85rem var(--body);border:0;background:none;color:var(--muted);padding:6px 14px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--maroon);color:var(--on-maroon)}
+.champ{background:var(--jade-soft);border-radius:6px;padding:16px 18px;display:flex;gap:16px;align-items:center}
+.tile{flex:none;width:46px;height:60px;border-radius:7px;background:var(--card);border:1px solid var(--line);box-shadow:0 3px 0 var(--jade);display:grid;place-items:center;font-family:var(--display);font-size:1.6rem;color:var(--maroon)}
+.champ .tile{color:var(--jade)}
+.champ small{display:block;color:var(--muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.champ strong{font-family:var(--display);font-weight:400;font-size:1.5rem}
+.tablebox{background:var(--card);border:1px solid var(--line);border-radius:6px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:right;padding:10px 12px;font-weight:600}
+td{padding:11px 12px;border-top:1px solid var(--line);text-align:right}
+th:nth-child(2),td:nth-child(2){text-align:left}
+td:first-child,th:first-child{text-align:center;width:44px;color:var(--muted)}
+td.name{font-weight:600}
+.pos{color:var(--win);font-weight:700}.neg{color:var(--loss);font-weight:700}
+tr.first td:first-child{color:var(--jade);font-weight:700}
+@media(max-width:480px){.opt{display:none}td,th{padding-inline:8px}}
+.hand{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px 14px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.hand div{min-width:0}
+.hand b{font-weight:600}
+.hand span{display:block;font-size:.85rem;color:var(--muted)}
+.hand .pts{font-family:var(--display);font-size:1.4rem;color:var(--jade);flex:none}
+.list{display:flex;flex-direction:column;gap:8px}
+.daytitle{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin:6px 0 0}
+.form{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:18px}
+.field{display:flex;flex-direction:column;gap:8px}
+.field>label,.field>.lab{font-weight:600;font-size:.9rem}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:500 .9rem var(--body);background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:7px 13px;cursor:pointer}
+.chip i{font-style:normal;color:var(--muted);margin-left:5px;font-size:.8rem}
+.chip[aria-pressed="true"]{background:var(--maroon);border-color:var(--maroon);color:var(--on-maroon)}
+.chip[aria-pressed="true"] i{color:var(--on-maroon);opacity:.8}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
+.step{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--line);border-radius:6px;padding:6px 8px 6px 12px;font-size:.9rem}
+.step span{display:flex;align-items:center;gap:8px}
+.step button{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--fg);font-size:1.1rem;cursor:pointer;line-height:1}
+.step output{min-width:1.2em;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.total{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding-top:16px}
+.total output{font-family:var(--display);font-size:2rem;color:var(--maroon)}
+:root[data-theme="dark"] .total output{color:var(--gold)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .total output{color:var(--gold)}}
+.total small{display:block;color:var(--muted);font-size:.82rem}
+.btn{font:600 1rem var(--body);background:var(--jade);color:var(--card);border:0;border-radius:6px;padding:12px 22px;cursor:pointer}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+input[type=text]{font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);flex:1;min-width:0}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:.9rem;font-weight:600}
+h1,h2,.tile,.champ strong,.hand .pts,.total output{font-weight:700}
+.brand{display:flex;align-items:center;gap:14px}
+.logo{height:68px;width:auto;flex:none}
+.tag{font-weight:300;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);font-size:.72rem;opacity:1}
+h1{text-transform:uppercase;letter-spacing:.03em}
+header{background:none;color:var(--fg);outline:0;padding:4px 0}
+.logo{height:54px}
+h1{font-size:1.5rem}
+.tablebox,.form{background:none;border:0;padding:0}
+.hand{background:none;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:12px 2px}
+.list{gap:0}
+.daytitle{margin-top:18px}
+.wrap{max-width:640px;gap:22px}
+summary{cursor:pointer;font-weight:600;font-size:.9rem;color:var(--jade)}
+.extras{display:flex;flex-direction:column;gap:18px;padding-top:16px}
+footer{font-size:.8rem;color:var(--muted);text-align:center}
+.rm{font-size:.78rem;padding:4px 10px;flex:none}
+input[type=email],input[type=password]{font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);width:100%}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="brand"><svg class="logo" viewBox="0 0 1997.063 2492.011" role="img" aria-label="Mahjong Dubai logo"><g>
+	<path fill="#F0F0F0" d="M566.509,2404.942c-76.979,0-149.328-30.04-203.723-84.586l-175.66-175.58
+		c-54.443-54.522-84.435-126.887-84.435-203.739V375.33c0-158.944,129.277-288.261,288.182-288.261h1039.68
+		c76.574,0,148.708,29.794,203.127,83.903l1.406,1.39l0.691,0.627l175.279,175.366c53.712,54.323,83.315,126.268,83.315,202.532
+		v1565.794c0,158.944-129.277,288.261-288.174,288.261H566.509z"/>
+	<path fill="#FFFFFF" d="M1652.364,375.279v1565.79c0,122.54-99.286,221.906-221.826,221.906H390.852
+		c-20.898,0-41.064-2.846-60.173-8.294c-0.243-0.082-0.487-0.082-0.732-0.243c-12.686-3.497-24.801-8.213-36.429-13.906
+		c-73.753-36.022-124.574-111.807-124.574-199.463V375.279c0-122.54,99.366-221.825,221.907-221.825h1039.685
+		c101.4,0,186.942,68.059,213.287,161.002C1649.436,333.809,1652.364,354.219,1652.364,375.279z"/>
+	<path fill="#511717" d="M1776.303,382.569l-1.87-1.789l-174.256-174.338l-0.895-0.894c-43.26-43.016-102.864-69.687-168.727-69.687
+		H390.868c-131.973,0-239.389,107.335-239.389,239.471v1565.708c0,66.027,26.834,125.875,70.173,169.215l175.64,175.639
+		c43.26,43.341,103.188,70.256,169.216,70.256h1039.684c131.973,0,239.391-107.416,239.391-239.471V550.89
+		C1845.583,485.35,1819.075,425.909,1776.303,382.569z M186.607,1941.039V375.332c0-112.702,91.56-204.343,204.261-204.343h1039.686
+		c90.665,0,167.751,59.36,194.259,141.244c6.506,19.84,10.001,41.064,10.001,63.1v1565.708c0,112.621-91.641,204.343-204.26,204.343
+		H390.868c-21.955,0-43.178-3.496-63.1-10.001C245.886,2108.71,186.607,2031.624,186.607,1941.039z"/>
+	<g>
+		<path fill="#511717" d="M342.567,326.716v1662.474h1136.281V326.716H342.567z M1454.453,1964.795H366.961V351.11h1087.493
+			V1964.795z"/>
+		<path fill="#511717" d="M1381.27,424.293H440.144v1467.319h941.126V424.293z M464.538,715.412l266.718-266.725h358.879
+			l266.741,266.749v885.073l-266.71,266.709H731.224l-266.686-266.686V715.412z M1356.876,680.941l-232.247-232.254h232.247V680.941
+			z M696.761,448.687l-232.223,232.23v-232.23H696.761z M464.538,1635.027l232.191,232.191H464.538V1635.027z M1124.661,1867.218
+			l232.214-232.214v232.214H1124.661z"/>
+	</g>
+	<circle fill="#E9AE40" cx="910.654" cy="1158.215" r="384.8"/>
+	<g>
+		<path fill="#83323F" d="M1151.837,1716.875v19.262H669.472v-19.262h26.63c58.853,0,106.521-47.668,106.521-106.521V1372.9
+			l26.098-26.097v-277.932l33.554-33.555V847.75l24.411-24.411V580.293h24.411v151.705l24.233,24.233V961.55l27.519,27.519v257.071
+			l28.494,28.494v213.931l27.341,25.831v95.958c0,58.853,47.756,106.521,106.521,106.521H1151.837z"/>
+		<g>
+			<g>
+				<polygon fill="#FFFFFF" points="949.534,1300.156 949.534,1736.137 931.781,1736.137 931.781,1282.402 				"/>
+			</g>
+			<g>
+				<polygon fill="#FFFFFF" points="889.616,1073.665 889.616,1736.137 871.863,1736.137 871.863,1091.418 				"/>
+			</g>
+		</g>
+	</g>
+</g>
+</svg><div><h1>Mahjong Dubai</h1><p class="tag">Play · Connect · Belong</p></div></div>
+    
+  </header>
+
+  <nav role="tablist">
+    <button role="tab" data-tab="board" aria-selected="true">Leaderboard</button>
+    <button role="tab" data-tab="games" aria-selected="false">Games</button>
+    <button role="tab" data-tab="enter" aria-selected="false">Enter a hand</button>
+    
+  </nav>
+
+  <section id="board">
+    <div class="row">
+      <h2>Leaderboard</h2>
+      <div class="seg" id="period">
+        <button aria-pressed="true" data-p="all">All time</button>
+        <button aria-pressed="false" data-p="last">Latest night</button>
+      </div>
+    </div>
+    
+    <div class="tablebox"><table>
+      <thead><tr><th>#</th><th>Player</th><th>Points</th><th>Wins</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table></div>
+    
+  </section>
+
+  <section id="games" hidden>
+    <h2>Games</h2>
+    <div class="list" id="handlist"></div>
+  </section>
+
+  <section id="enter" hidden>
+    <h2>Enter a hand</h2>
+    
+    <form id="login" class="form">
+      <p class="note">Admin only. Sign in to enter scores.</p>
+      <div class="field"><label for="email">Email</label><input type="email" id="email" autocomplete="username" required></div>
+      <div class="field"><label for="pw">Password</label><input type="password" id="pw" autocomplete="current-password" required></div>
+      <div><button class="btn" id="signin">Sign in</button></div>
+    </form>
+    <div class="form" id="adminArea" hidden>
+      <div class="row"><span class="note">Signed in as admin</span><button class="chip" id="signout">Sign out</button></div>
+      <div class="field"><span class="lab">Who's at the table? Pick four</span><div class="chips" id="fTable"></div><div class="row"><input type="text" id="newName" placeholder="Someone new? Type their name" maxlength="24"><button class="chip" id="addP">Add</button></div></div>
+      <div class="field"><span class="lab">Who won?</span><div class="chips" id="fWinner"></div></div>
+      <div class="field"><span class="lab">How did they win?</span><div class="chips" id="fFrom"></div></div>
+      <details><summary>Add extra points</summary><div class="extras"><div class="field"><span class="lab">Dealer</span>
+        <div class="steps">
+          <div class="chips"><button class="chip" id="fDealer" aria-pressed="false">Dealer won or discarded</button></div>
+          <div class="step"><span>Dealer's wins in a row before this</span><span><button data-s="streak" data-d="-1" aria-label="Fewer">−</button><output id="o-streak">0</output><button data-s="streak" data-d="1" aria-label="More">+</button></span></div>
+        </div>
+      </div>
+      <div class="field"><span class="lab">Count these</span><div class="steps" id="fCounts"></div></div>
+      <div class="field"><span class="lab">Hand patterns</span><div class="chips" id="fPats"></div></div></div></details>
+      <div class="total">
+        <div><output id="fTotal">5</output> <span>points</span><small id="fBreak"></small></div>
+        <button class="btn" id="fSave" disabled>Save hand</button>
+      </div>
+    </div>
+  </section>
+
+  
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+const $=s=>document.querySelector(s), esc=t=>t.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let players=[],pid=[],hands=[],admin=false;
+const db=supabase.createClient(MD_CONFIG.url,MD_CONFIG.key);
+const fmt=d=>new Date(d+"T00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});
+const today=()=>new Date().toLocaleDateString("en-CA");
+async function load(){
+  const [p,h]=await Promise.all([db.from("players").select("*").order("id"),db.from("hands").select("*").order("played_on").order("id")]);
+  if(p.error||h.error){toast("Couldn't load the scores. Check your connection.");return}
+  players=p.data.map(x=>x.name); pid=p.data.map(x=>x.id);
+  const ix=id=>pid.indexOf(id);
+  hands=h.data.map(x=>({id:x.id,d:fmt(x.played_on),t:x.table_ids.map(ix),w:ix(x.winner_id),from:x.discarder_id===null?null:ix(x.discarder_id),pts:x.points,tag:x.patterns}));
+  all();
+}
+const COUNTS=[["flower","Flowers",1],["hpong","Honour Pongs",1],["ogang","Open Gangs",1],["cgang","Concealed Gangs",2]];
+const PATS=[["Concealed Hand",1],["Single Wait",1],["No Flowers",1],["No Honours",1],["Gang Draw",2],["Robbing a Gang",1],["All Pongs",4],["Pure Straight with Chi",1],["Pure Straight Concealed",3],["Little Three Dragons",4],["Big Three Dragons",8],["Little Four Winds",8],["Big Four Winds",16],["Half Flush",4],["Full Flush",8],["All Honours",8],["Three Concealed Pongs",2],["Four Concealed Pongs",5],["Five Concealed Pongs",8],["All Melded Hand",1],["Last Tile",1],["Plucking the Moon",1]];
+let period="all";
+let f={t:[],w:null,from:undefined,dealer:false,streak:0,c:{flower:0,hpong:0,ogang:0,cgang:0},p:new Set()};
+
+function stats(list){
+  const s=players.map((n,i)=>({i,n,net:0,wins:0,hands:0,best:0}));
+  list.forEach(h=>{
+    h.t.forEach(i=>s[i].hands++);
+    s[h.w].wins++; s[h.w].best=Math.max(s[h.w].best,h.pts);
+    if(h.from===null){h.t.forEach(i=>{if(i!==h.w){s[i].net-=h.pts;s[h.w].net+=h.pts}})}
+    else{s[h.w].net+=h.pts;s[h.from].net-=h.pts}
+  });
+  return s.filter(x=>x.hands).sort((a,b)=>b.net-a.net||b.wins-a.wins);
+}
+const latest=()=>hands.length?hands[hands.length-1].d:"";
+const sign=n=>(n>0?"+":n<0?"−":"")+Math.abs(n);
+
+function renderBoard(){
+  const list=period==="all"?hands:hands.filter(h=>h.d===latest());
+  const s=stats(list);
+  if(!s.length){$("#rows").innerHTML=`<tr><td colspan="4" style="text-align:center">No games yet.</td></tr>`;return}
+  $("#rows").innerHTML=s.map((x,k)=>`<tr class="${k?"":"first"}"><td>${k+1}</td><td class="name">${esc(x.n)}</td><td class="${x.net>0?"pos":x.net<0?"neg":""}">${sign(x.net)}</td><td>${x.wins}</td></tr>`).join("");
+}
+function renderGames(){
+  const days=[...new Set(hands.map(h=>h.d))].reverse();
+  $("#handlist").innerHTML=days.map(d=>`<p class="daytitle">${d}</p>`+hands.filter(h=>h.d===d).reverse().map(h=>
+    `<div class="hand"><div><b>${esc(players[h.w])}</b> won ${h.from===null?"by self-draw":"off "+esc(players[h.from])+"'s discard"}<span>${esc(h.tag||"Base only")}</span></div><div class="pts">${h.pts}</div>${admin?`<button class="chip rm" data-rm="${h.id}">Remove</button>`:""}</div>`).join("")).join("");
+}
+function chip(label,on,attr,extra=""){return `<button class="chip" aria-pressed="${on}" ${attr}>${esc(label)}${extra}</button>`}
+function calc(){
+  const self=f.from===null, parts=["Base 5"]; let t=5;
+  const gd=f.p.has("Gang Draw")&&self, ch=f.p.has("Concealed Hand");
+  if(self){ if(ch&&!gd){t+=3;parts.push("Concealed Self Draw 3")} else if(!gd){t+=1;parts.push("Self Draw 1")} }
+  f.p.forEach(n=>{ if(n==="Concealed Hand"&&self&&!gd)return; const v=PATS.find(p=>p[0]===n)[1]; t+=v; parts.push(n+" "+v) });
+  COUNTS.forEach(([k,n,v])=>{ if(f.c[k]){t+=f.c[k]*v; parts.push(n+" "+f.c[k]*v)} });
+  if(f.dealer){const v=2*f.streak+1; t+=v; parts.push("Dealer "+v)}
+  return {t,parts};
+}
+function renderForm(){
+  $("#fTable").innerHTML=players.map((n,i)=>chip(n,f.t.includes(i),`data-t="${i}"`)).join("");
+  $("#fWinner").innerHTML=f.t.length===4?f.t.map(i=>chip(players[i],f.w===i,`data-w="${i}"`)).join(""):`<span class="note">Pick four players first.</span>`;
+  $("#fFrom").innerHTML=f.w===null?`<span class="note">Pick the winner first.</span>`:
+    chip("Self-draw",f.from===null,`data-f="self"`)+f.t.filter(i=>i!==f.w).map(i=>chip(players[i]+" discarded",f.from===i,`data-f="${i}"`)).join("");
+  $("#fDealer").setAttribute("aria-pressed",f.dealer); $("#o-streak").textContent=f.streak;
+  $("#fCounts").innerHTML=COUNTS.map(([k,n,v])=>`<div class="step"><span>${n} <i class="note">${v} each</i></span><span><button data-s="${k}" data-d="-1" aria-label="Fewer ${n}">−</button><output>${f.c[k]}</output><button data-s="${k}" data-d="1" aria-label="More ${n}">+</button></span></div>`).join("");
+  $("#fPats").innerHTML=PATS.map(([n,v])=>chip(n,f.p.has(n),`data-p="${esc(n)}"`,`<i>${v}</i>`)).join("");
+  const c=calc(); $("#fTotal").textContent=c.t; $("#fBreak").textContent=c.parts.join(" + ");
+  $("#fSave").disabled=!(f.t.length===4&&f.w!==null&&f.from!==undefined);
+}
+
+function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast.x);toast.x=setTimeout(()=>t.hidden=true,2200)}
+function show(tab){
+  document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===tab));
+  ["board","games","enter"].forEach(id=>$("#"+id).hidden=id!==tab);
+}
+function all(){renderBoard();renderGames();renderForm()}
+
+$("nav").onclick=e=>{const b=e.target.closest("button");if(b)show(b.dataset.tab)};
+$("#period").onclick=e=>{const b=e.target.closest("button");if(!b)return;period=b.dataset.p;
+  document.querySelectorAll("#period button").forEach(x=>x.setAttribute("aria-pressed",x===b));renderBoard()};
+$("#enter").onclick=e=>{
+  const b=e.target.closest("button"); if(!b||["fSave","addP","signin","signout"].includes(b.id))return; const d=b.dataset;
+  if(d.t!==undefined){const i=+d.t; if(f.t.includes(i))f.t=f.t.filter(x=>x!==i); else if(f.t.length<4)f.t.push(i); else return toast("A table is four players"); f.w=null;f.from=undefined}
+  else if(d.w!==undefined){f.w=+d.w;f.from=undefined}
+  else if(d.f!==undefined){f.from=d.f==="self"?null:+d.f}
+  else if(b.id==="fDealer"){f.dealer=!f.dealer}
+  else if(d.s){ if(d.s==="streak")f.streak=Math.max(0,f.streak+ +d.d); else f.c[d.s]=Math.max(0,Math.min(8,f.c[d.s]+ +d.d)) }
+  else if(d.p){f.p.has(d.p)?f.p.delete(d.p):f.p.add(d.p)}
+  renderForm();
+};
+$("#fSave").onclick=async()=>{
+  const c=calc(), who=players[f.w]; $("#fSave").disabled=true;
+  const {error}=await db.from("hands").insert({played_on:today(),table_ids:f.t.map(i=>pid[i]),winner_id:pid[f.w],discarder_id:f.from===null?null:pid[f.from],points:c.t,patterns:c.parts.slice(1).map(p=>p.replace(/ \d+$/,"")).join(", ")});
+  if(error){toast("Couldn't save. Try signing in again.");renderForm();return}
+  f={t:f.t,w:null,from:undefined,dealer:false,streak:0,c:{flower:0,hpong:0,ogang:0,cgang:0},p:new Set()};
+  await load(); toast(`Saved: ${who} wins ${c.t} points`);
+};
+$("#addP").onclick=async()=>{const v=$("#newName").value.trim(); if(!v)return toast("Type a name first");
+  if(players.some(p=>p.toLowerCase()===v.toLowerCase()))return toast("That name is already on the list");
+  const {error}=await db.from("players").insert({name:v});
+  if(error)return toast("Couldn't add the player. Try signing in again.");
+  $("#newName").value="";await load();toast(v+" added")};
+$("#handlist").onclick=async e=>{const b=e.target.closest("[data-rm]"); if(!b)return;
+  if(!b.dataset.ok){b.dataset.ok=1;b.textContent="Tap again to remove";return}
+  const {error}=await db.from("hands").delete().eq("id",b.dataset.rm);
+  if(error)return toast("Couldn't remove that hand.");
+  await load();toast("Hand removed")};
+$("#login").onsubmit=async e=>{e.preventDefault();
+  const {error}=await db.auth.signInWithPassword({email:$("#email").value.trim(),password:$("#pw").value});
+  if(error)toast("Wrong email or password");else $("#pw").value=""};
+$("#signout").onclick=()=>db.auth.signOut();
+db.auth.onAuthStateChange((_e,sess)=>{admin=!!sess;$("#login").hidden=admin;$("#adminArea").hidden=!admin;renderGames()});
+all(); load();
+</script>
+</body>
+</html>
